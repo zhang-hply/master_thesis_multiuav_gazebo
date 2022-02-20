@@ -1,0 +1,148 @@
+<?xml version="1.0"?>
+<launch>
+    <arg name="quad_name_2" default="uav2"/>
+    <arg name="quad_name_3" default = "uav3"/>
+    <arg name="quad_name_4" default="uav4"/>
+    <arg name="mav_name" default="hummingbird"/>
+    <arg name="model" value="$(find drone_racing)/resources/simulation/vehicles/$(arg mav_name)_rgbcamera300200.gazebo"/>
+    
+    <arg name="uav2_x_init" default="4.0"/>
+    <arg name="uav2_y_init" default="-3.0"/>
+    <arg name="uav3_x_init" default="3.0"/>
+    <arg name="uav3_y_init" default="4.0"/>
+    <arg name="uav4_x_init" default="-4.0"/>
+    <arg name="uav4_y_init" default="0.0"/>
+
+    <arg name="world_name" default="basic"/>
+    <arg name="enable_logging" default="false"/>
+    <arg name="enable_ground_truth" default="true"/>
+    <arg name="paused" value="false"/>
+    <arg name="gui" value="true"/>
+    <arg name="use_ground_truth" value="true"/>
+    <arg name="verbose" default="false"/>
+    <arg name="debug" default="false"/>
+    <arg name="custom_models" value="$(find insulator_focus)/resources"/>
+    <arg name="enable_command_feedthrough" value="true"/>
+
+    <!-- Gazebo stuff to spawn the world !-->
+    <env name="GAZEBO_MODEL_PATH"
+         value="${GAZEBO_MODEL_PATH}:$(find rotors_gazebo)/models:$(arg custom_models)"/>
+    <env name="GAZEBO_RESOURCE_PATH"
+         value="${GAZEBO_RESOURCE_PATH}:$(find rotors_gazebo)/models"/>
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="world_name" value="$(find rotors_gazebo)/worlds/$(arg world_name).world" />
+        <arg name="debug" value="$(arg debug)" />
+        <arg name="paused" value="$(arg paused)" />
+        <arg name="gui" value="$(arg gui)" />
+        <arg name="verbose" value="$(arg verbose)"/>
+    </include>
+
+    <!-- RotorS stuff to spawn the quadrotor !-->
+    <group ns="$(arg quad_name_2)">
+        <include file="$(find rotors_gazebo)/launch/spawn_mav.launch">
+            <arg name="mav_name" value="$(arg mav_name)" />
+            <arg name="namespace" value="$(arg quad_name_2)"/>
+            <arg name="model" value="$(arg model)" />
+            <arg name="enable_logging" value="$(arg enable_logging)" />
+            <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
+            <arg name="log_file" value="$(arg quad_name_2)"/>
+            <arg name="x" value="$(arg uav2_x_init)" />
+            <arg name="y" value="$(arg uav2_y_init)" />
+        </include>
+    
+        <node pkg="rpg_rotors_interface" type="rpg_rotors_interface" name="rpg_rotors_interface" output="screen" >
+            <rosparam file="$(find rpg_rotors_interface)/parameters/rpg_rotors_interface.yaml" />
+            <remap from="odometry" to="ground_truth/odometry" />
+            <remap from="rpg_rotors_interface/arm" to="bridge/arm" />
+        </node>
+        <!-- Autopilot -->
+        <node pkg="autopilot" type="autopilot" name="autopilot" output="screen">
+            <rosparam file="$(find state_predictor)/parameters/hummingbird.yaml" />
+            <rosparam file="$(find rpg_rotors_interface)/parameters/position_controller.yaml" />
+            <rosparam file="$(find rpg_rotors_interface)/parameters/autopilot.yaml" />
+            <param name="position_controller/use_rate_mode" value="True" />
+            <param name="velocity_estimate_in_world_frame" value="false" />
+            <param name="state_estimate_timeout" value="0.1" />
+            <param name="control_command_delay" value="0.05" />
+            <param name="enable_command_feedthrough" value="$(arg enable_command_feedthrough)" />
+            <remap from="autopilot/state_estimate" to="ground_truth/odometry" />
+        </node>
+    </group>
+
+    <group ns="$(arg quad_name_3)">
+        <include file="$(find rotors_gazebo)/launch/spawn_mav.launch">
+            <arg name="mav_name" value="$(arg mav_name)" />
+            <arg name="namespace" value="$(arg quad_name_3)"/>
+            <arg name="model" value="$(arg model)" />
+            <arg name="enable_logging" value="$(arg enable_logging)" />
+            <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
+            <arg name="log_file" value="$(arg quad_name_3)"/>
+            <arg name="x" value="$(arg uav3_x_init)" />
+            <arg name="y" value="$(arg uav3_y_init)" />
+        </include>
+    
+        <node pkg="rpg_rotors_interface" type="rpg_rotors_interface" name="rpg_rotors_interface" output="screen" >
+            <rosparam file="$(find rpg_rotors_interface)/parameters/rpg_rotors_interface.yaml" />
+            <remap from="odometry" to="ground_truth/odometry" />
+            <remap from="rpg_rotors_interface/arm" to="bridge/arm" />
+        </node>
+        <!-- Autopilot -->
+        <node pkg="autopilot" type="autopilot" name="autopilot" output="screen">
+            <rosparam file="$(find state_predictor)/parameters/hummingbird.yaml" />
+            <rosparam file="$(find rpg_rotors_interface)/parameters/position_controller.yaml" />
+            <rosparam file="$(find rpg_rotors_interface)/parameters/autopilot.yaml" />
+            <param name="position_controller/use_rate_mode" value="True" />
+            <param name="velocity_estimate_in_world_frame" value="false" />
+            <param name="state_estimate_timeout" value="0.1" />
+            <param name="control_command_delay" value="0.05" />
+            <param name="enable_command_feedthrough" value="$(arg enable_command_feedthrough)" />
+            <remap from="autopilot/state_estimate" to="ground_truth/odometry" />
+        </node>
+    </group>
+
+    <group ns="$(arg quad_name_4)">
+        <include file="$(find rotors_gazebo)/launch/spawn_mav.launch">
+            <arg name="mav_name" value="$(arg mav_name)" />
+            <arg name="namespace" value="$(arg quad_name_4)"/>
+            <arg name="model" value="$(arg model)" />
+            <arg name="enable_logging" value="$(arg enable_logging)" />
+            <arg name="enable_ground_truth" value="$(arg enable_ground_truth)" />
+            <arg name="log_file" value="$(arg quad_name_4)"/>
+            <arg name="x" value="$(arg uav4_x_init)" />
+            <arg name="y" value="$(arg uav4_y_init)" />
+        </include>
+    
+        <node pkg="rpg_rotors_interface" type="rpg_rotors_interface" name="rpg_rotors_interface" output="screen" >
+            <rosparam file="$(find rpg_rotors_interface)/parameters/rpg_rotors_interface.yaml" />
+            <remap from="odometry" to="ground_truth/odometry" />
+            <remap from="rpg_rotors_interface/arm" to="bridge/arm" />
+        </node>
+        <!-- Autopilot -->
+        <node pkg="autopilot" type="autopilot" name="autopilot" output="screen">
+            <rosparam file="$(find state_predictor)/parameters/hummingbird.yaml" />
+            <rosparam file="$(find rpg_rotors_interface)/parameters/position_controller.yaml" />
+            <rosparam file="$(find rpg_rotors_interface)/parameters/autopilot.yaml" />
+            <param name="position_controller/use_rate_mode" value="True" />
+            <param name="velocity_estimate_in_world_frame" value="false" />
+            <param name="state_estimate_timeout" value="0.1" />
+            <param name="control_command_delay" value="0.05" />
+            <param name="enable_command_feedthrough" value="$(arg enable_command_feedthrough)" />
+            <remap from="autopilot/state_estimate" to="ground_truth/odometry" />
+        </node>
+    </group>
+
+    <node pkg="multiuav_formation" type="formation_controller_node" name="formation_controller_node" output="screen"/>
+
+
+
+    <node pkg="rosbag" type="record"  name="record" args="
+        /uav2/ground_truth/odometry
+        /uav3/ground_truth/odometry
+        /uav4/ground_truth/odometry
+        /uav2/autopilot/velocity_command
+        /uav3/autopilot/velocity_command
+        /inter_distance
+        /yaw
+        /uav4/autopilot/velocity_command
+        -o $(env HOME)/data/tmp/rosbag_for_multiuav_formation/formation"/> 
+</launch>
