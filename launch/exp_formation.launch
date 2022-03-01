@@ -1,0 +1,8 @@
+<?xml version="1.0"?>
+<launch>
+
+    <node pkg="multiuav_formation" type="exp_formation_controller_node" name="exp_formation_controller_node" output="screen">
+        <rosparam file="$(find multiuav_formation)/parameters/exp_formation.yaml" />
+    </node>
+
+</launch>

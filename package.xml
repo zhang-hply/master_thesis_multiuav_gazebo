@@ -57,6 +57,8 @@
   <build_export_depend>rospy</build_export_depend>
   <build_export_depend>std_msgs</build_export_depend>
   <build_export_depend>geometry_msgs</build_export_depend>
+  <build_export_depend>geographic_msgs</build_export_depend>
+  <build_export_depend>mavros_msgs</build_export_depend>
   <build_export_depend>eigen_conversions</build_export_depend> 
   <build_export_depend>tf2_ros</build_export_depend>
   <build_export_depend>nav_msgs</build_export_depend>
@@ -67,7 +69,9 @@
   <exec_depend>rospy</exec_depend>
   <exec_depend>std_msgs</exec_depend>
   <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>geographic_msgs</exec_depend>
   <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>mavros_msgs</exec_depend>
   <exec_depend>quadrotor_common</exec_depend>
 
 
