@@ -4,9 +4,13 @@ ExpFormationController::ExpFormationController(
     const ros::NodeHandle & nh, const ros::NodeHandle & pnh)
     :nh_(nh),
     pnh_(pnh),
-    exp_uav2(ros::NodeHandle("uav2"), pnh_),
-    exp_uav3(ros::NodeHandle("uav3"), pnh_),
-    exp_uav4(ros::NodeHandle("uav4"), pnh_){
+    exp_uav2_(ros::NodeHandle("uav2"), pnh_),
+    exp_uav3_(ros::NodeHandle("uav3"), pnh_),
+    exp_uav4_(ros::NodeHandle("uav4"), pnh_),
+    ready_to_init_position_(true),
+    ready_to_formation_(false),
+    uav4_ready_to_fly_(false),
+    ready_to_yaw_(false){
         loadParameter();
         ROS_INFO("global_position_origin: %f, %f, %f", gp_origin_[0], gp_origin_[1], gp_origin_[2]);
         initializeState();
@@ -24,22 +28,32 @@ ExpFormationController::ExpFormationController(
         inter_distance_error_pub_ = nh_.advertise<nav_msgs::Odometry>(
             "/inter_distance", 1);
 
-        main_loop_timer_ = nh_.createTimer(ros::Duration(0.05), 
+        main_loop_timer_ = nh_.createTimer(ros::Duration(0.02), 
         &ExpFormationController::mainloop, this);
 }
 ExpFormationController::~ExpFormationController(){}
 
 void ExpFormationController::mainloop(const ros::TimerEvent & time){
-    pos_uav2_ = exp_uav2.pos_;
-    pos_uav3_ = exp_uav2.pos_;
-    pos_uav4_ = exp_uav2.pos_;
+    pos_uav2_ = exp_uav2_.pos_;
+    pos_uav3_ = exp_uav2_.pos_;
+    pos_uav4_ = exp_uav2_.pos_;
+
+    if(ready_to_init_position_){
+        ROS_INFO_ONCE("Enter the send the init position.");
+        exp_uav2_.pubLocalPosition(uav2_init_pos_);
+        exp_uav3_.pubLocalPosition(uav3_init_pos_);
+        exp_uav4_.pubLocalPosition(uav4_init_pos_);
+    }
 
     if(ready_to_formation_){
         computeInterDistance();
         Eigen::Vector2d u2 = computeUav2VelCmd();
         Eigen::Vector2d u3 = computeUav3VelCmd();
-        exp_uav2.pubLocalCmdVel(u2);
-        exp_uav3.pubLocalCmdVel(u3);
+        exp_uav2_.pubLocalCmdVel(u2, uav2_init_pos_[2]);
+        exp_uav3_.pubLocalCmdVel(u3, uav2_init_pos_[3]);
+
+        //hold the uav4 hovering
+        exp_uav4_.pubLocalPosition(uav4_init_pos_);
     }
 
     if(uav4_ready_to_fly_){
@@ -48,33 +62,38 @@ void ExpFormationController::mainloop(const ros::TimerEvent & time){
         u4[0] = 0.4 * (des_pos_uav4_.x() - pos_uav4_.x());
         u4[1] = 0.4 * (des_pos_uav4_.y() - pos_uav4_.y());
 
-        exp_uav4.pubLocalCmdVel(u4);
+        exp_uav4_.pubLocalCmdVel(u4, uav2_init_pos_[4]);
+        //hold the uav2/uav3 hovering
+        exp_uav2_.pubLocalPosition(uav2_des_pos_);
+        exp_uav3_.pubLocalPosition(uav3_des_pos_);
     }
 
     if(ready_to_yaw_){
-        exp_uav2.pubYawCmdVel(des_yaw_.x());
-        exp_uav3.pubYawCmdVel(des_yaw_.y());
-        exp_uav4.pubYawCmdVel(des_yaw_.z());
+        //需要测试此时是否需要发送位置指令进而保证无人机的悬停
+        exp_uav2_.pubYawCmdVel(des_yaw_.x());
+        exp_uav3_.pubYawCmdVel(des_yaw_.y());
+        exp_uav4_.pubYawCmdVel(des_yaw_.z());
     }
 }
 
 void ExpFormationController::initializeState(){
     //wait for service of arming and set_mode
-    exp_uav2.arming_client_.waitForExistence();
-    exp_uav2.set_mode_client_.waitForExistence();
+    exp_uav2_.arming_client_.waitForExistence();
+    exp_uav2_.set_mode_client_.waitForExistence();
 
-    exp_uav3.arming_client_.waitForExistence();
-    exp_uav3.set_mode_client_.waitForExistence();
+    exp_uav3_.arming_client_.waitForExistence();
+    exp_uav3_.set_mode_client_.waitForExistence();
 
-    exp_uav4.arming_client_.waitForExistence();
-    exp_uav4.set_mode_client_.waitForExistence();
+    exp_uav4_.arming_client_.waitForExistence();
+    exp_uav4_.set_mode_client_.waitForExistence();
     ROS_INFO("The service for arming and set_mode is ready");
     //wait for FCU connection
-    while (ros::ok() && exp_uav2.state_.connected
-        && exp_uav3.state_.connected
-        && exp_uav4.state_.connected){
+    while (ros::ok() && exp_uav2_.state_.connected
+        && exp_uav3_.state_.connected
+        && exp_uav4_.state_.connected){
             ros::Rate rate(20.0);
             rate.sleep();
+            ROS_INFO("The onboard computer does not connect the fcu!");
     }
 
     geographic_msgs::GeoPointStamped msg;
@@ -83,9 +102,14 @@ void ExpFormationController::initializeState(){
     msg.position.longitude = gp_origin_[1];
     msg.position.altitude = gp_origin_[2];
 
-    exp_uav2.pubSetGPOrigin(msg);
-    exp_uav3.pubSetGPOrigin(msg);
-    exp_uav4.pubSetGPOrigin(msg);
+    exp_uav2_.pubSetGPOrigin(msg);
+    exp_uav3_.pubSetGPOrigin(msg);
+    exp_uav4_.pubSetGPOrigin(msg);
+
+    //echo gp_origin
+    exp_uav2_.echoGPOrigin();
+    exp_uav3_.echoGPOrigin();
+    exp_uav4_.echoGPOrigin();
 }
 //latitude weidu longitude jingdu
 void ExpFormationController::loadParameter(){
@@ -93,38 +117,59 @@ void ExpFormationController::loadParameter(){
                     std::vector<double>({31.81746431549553,
                                                                 117.13249134391783,
                                                                 33.0}));
+
+    std::vector<double> uav2_init_pos;
+    std::vector<double> uav3_init_pos;
+    std::vector<double> uav4_init_pos;
+    std::vector<double> des_inter_distance_square;
+
+    pnh_.param<std::vector<double>>("uav2_init_pos", uav2_init_pos, 
+                    std::vector<double>({3.0, -2.0, 2.0}));
+
+    pnh_.param<std::vector<double>>("uav3_init_pos", uav3_init_pos, 
+                    std::vector<double>({2.0, 3.0, 2.0}));
+
+    pnh_.param<std::vector<double>>("uav4_init_pos", uav4_init_pos, 
+                    std::vector<double>({-3.0, 0.0, 2.0}));                                                                    
+    
+    uav2_init_pos_ = vector2EigenVector3d(uav2_init_pos);
+    uav3_init_pos_ = vector2EigenVector3d(uav3_init_pos);
+    uav4_init_pos_ = vector2EigenVector3d(uav4_init_pos);
+
+    pnh_.param<std::vector<double>>("des_inter_distance_square", des_inter_distance_square, 
+                    std::vector<double>({4.0, 4.0, 12.0}));       
+
+    for (size_t i = 0; i < 2; i++){
+        des_inter_distance_[i] = sqrt(des_inter_distance_square[i]);
+    }
+    
+
+    pos_uav1_ = Eigen::Vector2d(0.0, 0.0);
 }
 
 void ExpFormationController::setMode(){
     mavros_msgs::SetMode set_mode_srv;
     set_mode_srv.request.custom_mode = "OFFBOARD";
 
-    if(exp_uav2.state_.armed && exp_uav2.state_.mode != "OFFBOARD"){
-        while(!(exp_uav2.set_mode_client_.call(set_mode_srv) 
-                    && set_mode_srv.response.mode_sent)){
-                        ROS_INFO("set uav2 mode to offboard unsuccessfully");
-                    }
-
-        ROS_INFO("uav2 offboard enabled");
+    if(exp_uav2_.state_.armed && exp_uav2_.state_.mode != "OFFBOARD"){
+        if(exp_uav2_.set_mode_client_.call(set_mode_srv) &&
+                set_mode_srv.response.mode_sent){
+                        ROS_INFO("uav2 offboard enabled");
+        }
     }
     
-
-    if(exp_uav3.state_.armed && exp_uav3.state_.mode != "OFFBOARD"){
-        while(!(exp_uav3.set_mode_client_.call(set_mode_srv) 
-                    && set_mode_srv.response.mode_sent)){
-                        ROS_INFO("set uav3 mode to offboard unsuccessfully");
-                    }
-
-        ROS_INFO("uav3 offboard enabled");
+    if(exp_uav3_.state_.armed && exp_uav3_.state_.mode != "OFFBOARD"){
+        if(exp_uav3_.set_mode_client_.call(set_mode_srv) &&
+                set_mode_srv.response.mode_sent){
+                        ROS_INFO("uav3 offboard enabled");
+        }
     }
 
-    if(exp_uav4.state_.armed && exp_uav4.state_.mode != "OFFBOARD"){
-        while(!(exp_uav4.set_mode_client_.call(set_mode_srv) 
-                    && set_mode_srv.response.mode_sent)){
-                        ROS_INFO("set uav4 mode to offboard unsuccessfully");
-                    }
-
-        ROS_INFO("uav4 offboard enabled");
+    if(exp_uav4_.state_.armed && exp_uav4_.state_.mode != "OFFBOARD"){
+        if(exp_uav4_.set_mode_client_.call(set_mode_srv) &&
+                set_mode_srv.response.mode_sent){
+                        ROS_INFO("uav4 offboard enabled");
+        }
     }
 }
 
@@ -201,11 +246,19 @@ Eigen::Vector2d ExpFormationController::computeUav3VelCmd(){
 
 void ExpFormationController::readyToFormationCallback(const std_msgs::BoolConstPtr & msg){
     ready_to_formation_  = msg->data;
+    ready_to_init_position_ = false;
 }
 
 void ExpFormationController::uav4ReadyToFlyCallback(const std_msgs::BoolConstPtr & msg){
     uav4_ready_to_fly_ = msg->data;
     computeUav4DesPosition();
+    uav2_des_pos_.x() = pos_uav2_.x();
+    uav2_des_pos_.y() = pos_uav2_.y();
+    uav2_des_pos_.z() = uav2_init_pos_.z();
+
+    uav3_des_pos_.x() = pos_uav3_.x();
+    uav3_des_pos_.y() = pos_uav3_.y();
+    uav3_des_pos_.z() = uav3_init_pos_.z();
     ready_to_formation_ = false;
 }
 
@@ -239,4 +292,10 @@ void ExpFormationController::computeDesYaw(){
 
 double ExpFormationController::pow2(double x){
     return x * x;
+}
+
+Eigen::Vector3d ExpFormationController::vector2EigenVector3d(const std::vector<double> & v){
+    Eigen::Vector3d ev;
+    ev[0] = v[0];ev[1] = v[1];ev[2] = v[2];
+    return ev;
 }

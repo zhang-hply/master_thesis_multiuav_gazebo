@@ -43,22 +43,30 @@ public:
     mavros_msgs::State state_;
     ros::ServiceClient arming_client_;
     ros::ServiceClient set_mode_client_;
-    void pubLocalCmdVel(const Eigen::Vector2d & u);
+    void pubLocalCmdVel(const Eigen::Vector2d & u, const double & des_height);
     void pubSetGPOrigin(const geographic_msgs::GeoPointStamped & msg);
     void pubYawCmdVel(const double des_yaw);
+    void echoGPOrigin();
+    void pubLocalPosition(const Eigen::Vector3d & position);
 private:
     ros::NodeHandle nh_, pnh_;
     // subscriber the info of connected, armed, guided, manual_input, mode, system_status
     ros::Subscriber state_sub_;
     ros::Subscriber pose_sub_;
+    ros::Subscriber gp_origin_sub_;
 
     ros::Publisher local_cmd_vel_pub_;
     ros::Publisher set_gp_origin_pub_;
+    ros::Publisher local_position_pub_;
     double yaw_;
+
+    double current_height_;
+
+    geographic_msgs::GeoPointStamped gp_origin_;
 
 
     void stateCallback(const mavros_msgs::StateConstPtr & msg);
     void poseCallback(const geometry_msgs::PoseStampedConstPtr & msg);
-
+    void gpOriginCallback(const geographic_msgs::GeoPointStampedConstPtr & msg);
 };
 

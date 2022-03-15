@@ -25,8 +25,13 @@ public:
 
 private:
     ros::NodeHandle nh_, pnh_;
-    ExpUAV exp_uav2, exp_uav3, exp_uav4;
+    ExpUAV exp_uav2_, exp_uav3_, exp_uav4_;
     std::vector<double> gp_origin_;
+
+    Eigen::Vector3d uav2_init_pos_;
+    Eigen::Vector3d uav3_init_pos_;
+    Eigen::Vector3d uav4_init_pos_;
+
     ros::Timer main_loop_timer_;
 
     ros::Subscriber ready_to_formation_sub_;
@@ -34,6 +39,7 @@ private:
     ros::Subscriber ready_to_yaw_sub_;
     ros::Publisher inter_distance_error_pub_;
 
+    bool ready_to_init_position_;
     bool ready_to_formation_;
     bool uav4_ready_to_fly_;
     bool ready_to_yaw_;
@@ -67,6 +73,8 @@ private:
     void loadParameter();
     void initializeState();
     void setMode();
+
+    Eigen::Vector3d vector2EigenVector3d(const std::vector<double> & v);
 };
 
 

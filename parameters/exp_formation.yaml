@@ -1,1 +1,7 @@
 gp_origin: [31.81746431549553, 117.13249134391783, 33.0]
+
+uav2_init_pos: [3.0, -2.0, 2.0]
+uav3_init_pos: [2.0, 3.0, 2.0]
+uav4_init_pos: [-3.0, 0.0, 2.0]
+
+des_inter_distance_square: [4.0, 4.0, 12.0]
