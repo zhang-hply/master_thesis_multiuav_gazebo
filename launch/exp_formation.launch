@@ -5,4 +5,24 @@
         <rosparam file="$(find multiuav_formation)/parameters/exp_formation.yaml" />
     </node>
 
+    <node pkg="rosbag" type="record"  name="record" args="
+        /uav2/mavros/setpoint_position/local
+        /uav3/mavros/setpoint_position/local
+        /uav4/mavros/setpoint_position/local
+        
+        /uav2/mavros/setpoint_velocity/cmd_vel
+        /uav3/mavros/setpoint_velocity/cmd_vel
+        /uav4/mavros/setpoint_velocity/cmd_vel
+    
+        /uav2/mavros/local_position/pose
+        /uav3/mavros/local_position/pose
+        /uav4/mavros/local_position/pose
+
+        /inter_distance
+        
+        /uav2/yaw
+        /uav3/yaw
+        /uav4/yaw
+
+        -o $(env HOME)/data/tmp/rosbag_for_multiuav_formation/exp_formation"/> 
 </launch>

@@ -32,6 +32,9 @@ private:
     Eigen::Vector3d uav3_init_pos_;
     Eigen::Vector3d uav4_init_pos_;
 
+    Eigen::Vector3d uav2_des_pos_;
+    Eigen::Vector3d uav3_des_pos_;
+
     ros::Timer main_loop_timer_;
 
     ros::Subscriber ready_to_formation_sub_;

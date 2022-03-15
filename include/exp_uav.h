@@ -2,6 +2,7 @@
 #include <vector>
 #include <Eigen/Dense>
 #include <geometry_msgs/TwistStamped.h>
+#include <geometry_msgs/Vector3Stamped.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geographic_msgs/GeoPointStamped.h>
 #include <mavros_msgs/CommandBool.h>
@@ -58,6 +59,7 @@ private:
     ros::Publisher local_cmd_vel_pub_;
     ros::Publisher set_gp_origin_pub_;
     ros::Publisher local_position_pub_;
+    ros::Publisher yaw_pub_;
     double yaw_;
 
     double current_height_;

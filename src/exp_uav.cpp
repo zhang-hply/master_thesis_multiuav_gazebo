@@ -18,6 +18,9 @@ ExpUAV::ExpUAV(const ros::NodeHandle & nh, const ros::NodeHandle & pnh)\
         local_position_pub_ = nh_.advertise<geometry_msgs::PoseStamped>(
                             "mavros/setpoint_position/local", 10);
 
+        yaw_pub_ = nh_.advertise<geometry_msgs::Vector3Stamped>(
+                            "yaw", 10);
+
 
         set_gp_origin_pub_ = nh_.advertise<geographic_msgs::GeoPointStamped>(
                             "mavros/global_position/set_gp_origin", 10);
@@ -63,6 +66,11 @@ void ExpUAV::poseCallback(const geometry_msgs::PoseStampedConstPtr & msg){
     current_height_ = msg->pose.position.z;
     yaw_ =  (quadrotor_common::quaternionToEulerAnglesZYX(
         quadrotor_common::geometryToEigen(msg->pose.orientation))).z();
+    
+    geometry_msgs::Vector3Stamped yaw_msg;
+    yaw_msg.header.stamp = ros::Time::now();
+    yaw_msg.vector.x = yaw_;
+    yaw_pub_.publish(yaw_msg);
 }
 
 void ExpUAV::gpOriginCallback(const geographic_msgs::GeoPointStampedConstPtr & msg){
