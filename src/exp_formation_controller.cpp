@@ -75,7 +75,9 @@ void ExpFormationController::mainloop(const ros::TimerEvent & time){
         //hold the uav2/uav3 hovering
         ROS_DEBUG("u4/x: %f, y: %f", u4.x(), u4.y());
         ROS_DEBUG("uav2_des_pos_/x: %f, y: %f, z: %f", uav2_des_pos_.x(), uav2_des_pos_.y(), uav2_des_pos_.z());
+        ROS_DEBUG("relative uav2_des_pos_/x: %f, y: %f, z: %f", uav2_des_pos_.x() - pos_uav1_.x(), uav2_des_pos_.y() - pos_uav1_.y(), uav2_des_pos_.z());
         ROS_DEBUG("uav3_des_pos_/x: %f, y: %f, z: %f", uav3_des_pos_.x(), uav3_des_pos_.y(), uav3_des_pos_.z());
+        ROS_DEBUG("relative uav3_des_pos_/x: %f, y: %f, z: %f", uav3_des_pos_.x() - pos_uav1_.x(), uav3_des_pos_.y() - pos_uav1_.y(), uav3_des_pos_.z());
         exp_uav2_.pubLocalPosition(uav2_des_pos_);
         exp_uav3_.pubLocalPosition(uav3_des_pos_);
     }
@@ -245,8 +247,9 @@ void ExpFormationController::initializeState(){
 }
 
 void ExpFormationController::initCenterOfCoordinate(){
-    while (exp_uav2_.global_position_.status.status == sensor_msgs::NavSatStatus::STATUS_NO_FIX){
-        ROS_INFO("The gps of uav2 is no fix");
+    while (exp_uav2_.global_position_.status.status == sensor_msgs::NavSatStatus::STATUS_NO_FIX
+               || abs(exp_uav2_.global_position_.latitude) < 1.0){
+        ROS_WARN("The gps of uav2 is no fix");
     }
     ROS_INFO("The gps of uav2 is fix");
     
@@ -272,6 +275,9 @@ void ExpFormationController::setMode(){
         if(exp_uav2_.set_mode_client_.call(set_mode_srv) &&
                 set_mode_srv.response.mode_sent){
                         ROS_INFO("uav2 offboard enabled");
+        } 
+        else{
+              ROS_INFO("fail to enable uav2 offboard");
         }
     }
     
@@ -280,12 +286,18 @@ void ExpFormationController::setMode(){
                 set_mode_srv.response.mode_sent){
                         ROS_INFO("uav3 offboard enabled");
         }
+        else{
+              ROS_INFO("fail to enable uav3 offboard");
+        }
     }
 
     if(exp_uav4_.state_.armed && exp_uav4_.state_.mode != "OFFBOARD"){
         if(exp_uav4_.set_mode_client_.call(set_mode_srv) &&
                 set_mode_srv.response.mode_sent){
                         ROS_INFO("uav4 offboard enabled");
+        }
+        else{
+              ROS_INFO("fail to enable uav4 offboard");
         }
     }
 }

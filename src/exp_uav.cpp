@@ -93,6 +93,7 @@ void ExpUAV::pubYawCmdVel(const double des_yaw){
     msg.header.stamp = ros::Time::now();
     double gain = 1.1;
     double yaw_rate = gain * (des_yaw - yaw_);
+    ROS_DEBUG("%s, yaw_rate: %f", nh_.getNamespace().c_str(), yaw_rate);
     yaw_rate = yaw_rate < 0.5 ? (yaw_rate  > -0.5 ? yaw_rate : -0.5) : 0.5;
     msg.twist.angular.z = yaw_rate;
     local_cmd_vel_pub_.publish(msg);
