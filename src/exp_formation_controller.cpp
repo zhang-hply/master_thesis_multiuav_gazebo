@@ -200,6 +200,7 @@ void ExpFormationController::uav4ReadyToFlyCallback(const std_msgs::BoolConstPtr
 void ExpFormationController::readyToYawCallback(const std_msgs::BoolConstPtr & msg){
     ready_to_yaw_ = msg->data;
     computeDesYaw();
+    ready_to_formation_ = false;
     uav4_ready_to_fly_ = false;
 }
 
