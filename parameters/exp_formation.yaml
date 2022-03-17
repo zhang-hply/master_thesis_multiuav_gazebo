@@ -4,4 +4,9 @@ uav2_init_pos: [3.0, -2.0, 2.0]
 uav3_init_pos: [2.0, 3.0, 2.0]
 uav4_init_pos: [-3.0, 0.0, 2.0]
 
-des_inter_distance_square: [4.0, 4.0, 12.0]
+des_inter_distance_square: [9.0, 9.0, 27.0]
+
+gain_m: 0.01
+gain_n: 0.04
+
+threshold: 12.0

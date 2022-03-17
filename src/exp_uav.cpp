@@ -38,16 +38,27 @@ void ExpUAV::stateCallback(const mavros_msgs::StateConstPtr & msg){
     state_ = *msg;
 }
 
-void ExpUAV::pubLocalCmdVel(const Eigen::Vector2d & u, const double & des_height){
+void ExpUAV::pubLocalCmdVel(Eigen::Vector2d & u, const double & des_height){
+    u = u.cwiseMin(Eigen::Vector2d(1.0, 1.0));
+    u = u.cwiseMax(Eigen::Vector2d(-1.0, -1.0));
+
     geometry_msgs::TwistStamped msg;
     msg.header.stamp = ros::Time::now();
     msg.twist.linear.x = u[0];
     msg.twist.linear.y = u[1];
-    msg.twist.linear.z = - (current_height_ - des_height);
+    double uz = - (current_height_ - des_height);
+    uz = uz < 0.5 ? (uz  > -0.5 ? uz : -0.5) : 0.5;
+    msg.twist.linear.z = uz;
+    
     local_cmd_vel_pub_.publish(msg);
 }
 
-void ExpUAV::pubLocalPosition(const Eigen::Vector3d & position){
+void ExpUAV::pubLocalPosition(Eigen::Vector3d & position){
+    if(position.maxCoeff() > 100 || position.minCoeff() < -100){
+        ROS_ERROR("The position command is unavaliable");
+        exit(4);
+    }
+
     geometry_msgs::PoseStamped msg;
     msg.header.stamp = ros::Time::now();
     msg.pose.position.x = position.x();
@@ -89,7 +100,9 @@ void ExpUAV::pubYawCmdVel(const double des_yaw){
     geometry_msgs::TwistStamped msg;
     msg.header.stamp = ros::Time::now();
     double gain = 1.1;
-    msg.twist.angular.z = gain * (des_yaw - yaw_);
+    double yaw_rate = gain * (des_yaw - yaw_);
+    yaw_rate = yaw_rate < 0.5 ? (yaw_rate  > -0.5 ? yaw_rate : -0.5) : 0.5;
+    msg.twist.angular.z = yaw_rate;
     local_cmd_vel_pub_.publish(msg);
 }
 

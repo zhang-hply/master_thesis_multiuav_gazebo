@@ -51,8 +51,8 @@ private:
     Eigen::Vector2d pos_uav2_;
     Eigen::Vector2d pos_uav3_;
     Eigen::Vector2d pos_uav4_;
-    Eigen::Vector2d des_pos_uav4_;
-    Eigen::Vector3d yaw_;
+    Eigen::Vector2d uav4_des_pos_;
+
     Eigen::Vector3d des_yaw_;
 
     double coefficient_;
