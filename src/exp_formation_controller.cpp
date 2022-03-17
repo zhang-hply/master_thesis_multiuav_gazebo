@@ -237,9 +237,9 @@ void ExpFormationController::initializeState(){
     exp_uav4_.set_mode_client_.waitForExistence();
     ROS_INFO("The service for arming and set_mode is ready");
     //wait for FCU connection
-    while (ros::ok() && exp_uav2_.state_.connected
-        && exp_uav3_.state_.connected
-        && exp_uav4_.state_.connected){
+    while (!exp_uav2_.state_.connected
+        || !exp_uav3_.state_.connected
+        || !exp_uav4_.state_.connected){
             ros::Rate rate(20.0);
             rate.sleep();
             ROS_INFO("The onboard computer does not connect the fcu!");
