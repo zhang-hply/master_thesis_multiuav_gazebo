@@ -9,8 +9,8 @@ ExpUAV::ExpUAV(const ros::NodeHandle & nh, const ros::NodeHandle & pnh)\
         pose_sub_ = nh_.subscribe("mavros/local_position/pose", 10,
                             &ExpUAV::poseCallback, this);
 
-        gp_origin_sub_ = nh_.subscribe("mavros/global_position/gp_origin", 10,
-                            &ExpUAV::gpOriginCallback, this);
+        global_position_sub_ = nh_.subscribe("mavros/global_position/global", 10,
+                            &ExpUAV::globalPositionCallback, this);
         
         local_cmd_vel_pub_ = nh_.advertise<geometry_msgs::TwistStamped>(
                             "mavros/setpoint_velocity/cmd_vel", 10);
@@ -84,17 +84,9 @@ void ExpUAV::poseCallback(const geometry_msgs::PoseStampedConstPtr & msg){
     yaw_pub_.publish(yaw_msg);
 }
 
-void ExpUAV::gpOriginCallback(const geographic_msgs::GeoPointStampedConstPtr & msg){
-    gp_origin_ = *msg;
+void ExpUAV::globalPositionCallback(const sensor_msgs::NavSatFixConstPtr & msg){
+    global_position_ = *msg;
 }
-
-void ExpUAV::echoGPOrigin(){
-    ROS_INFO("the latitude is %f, longitude is %f, the altitude is %f", 
-                    gp_origin_.position.latitude,
-                    gp_origin_.position.longitude,
-                    gp_origin_.position.altitude);
-}
-
 
 void ExpUAV::pubYawCmdVel(const double des_yaw){
     geometry_msgs::TwistStamped msg;

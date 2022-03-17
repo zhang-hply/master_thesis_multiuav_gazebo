@@ -13,8 +13,8 @@ ExpFormationController::ExpFormationController(
     ready_to_yaw_(false){
         ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug);
         loadParameter();
-        ROS_INFO("global_position_origin: %f, %f, %f", gp_origin_[0], gp_origin_[1], gp_origin_[2]);
         initializeState();
+        initCenterOfCoordinate();
         setMode();
 
         ready_to_formation_sub_ = nh_.subscribe("/ready_to_formation", 1,
@@ -70,7 +70,7 @@ void ExpFormationController::mainloop(const ros::TimerEvent & time){
         Eigen::Vector2d u4;
         u4[0] = 0.4 * (uav4_des_pos_.x() - pos_uav4_.x());
         u4[1] = 0.4 * (uav4_des_pos_.y() - pos_uav4_.y());
-        ROS_DEBUG("uav4_des_pos_/x: %f, y: %f, z: %f", uav4_des_pos_.x(), uav4_des_pos_.y(), uav4_des_pos_.z());
+        ROS_DEBUG("uav4_des_pos_/x: %f, y: %f", uav4_des_pos_.x(), uav4_des_pos_.y());
         exp_uav4_.pubLocalCmdVel(u4, uav4_init_pos_[2]);
         //hold the uav2/uav3 hovering
         ROS_DEBUG("u4/x: %f, y: %f", u4.x(), u4.y());
@@ -242,21 +242,26 @@ void ExpFormationController::initializeState(){
             rate.sleep();
             ROS_INFO("The onboard computer does not connect the fcu!");
     }
+}
 
+void ExpFormationController::initCenterOfCoordinate(){
+    while (exp_uav2_.global_position_.status.status == sensor_msgs::NavSatStatus::STATUS_NO_FIX){
+        ROS_INFO("The gps of uav2 is no fix");
+    }
+    ROS_INFO("The gps of uav2 is fix");
+    
     geographic_msgs::GeoPointStamped msg;
     msg.header.stamp = ros::Time::now();
-    msg.position.latitude = gp_origin_[0];
-    msg.position.longitude = gp_origin_[1];
-    msg.position.altitude = gp_origin_[2];
+    msg.position.latitude = exp_uav2_.global_position_.latitude;
+    msg.position.longitude = exp_uav2_.global_position_.longitude;
+    msg.position.altitude = exp_uav2_.global_position_.altitude;
 
     exp_uav2_.pubSetGPOrigin(msg);
     exp_uav3_.pubSetGPOrigin(msg);
     exp_uav4_.pubSetGPOrigin(msg);
 
-    //echo gp_origin
-    exp_uav2_.echoGPOrigin();
-    exp_uav3_.echoGPOrigin();
-    exp_uav4_.echoGPOrigin();
+    ROS_INFO("global_position_origin/latitude: %f, longitude: %f, altitude: %f", 
+                                        msg.position.latitude, msg.position.longitude, msg.position.altitude);
 }
 
 void ExpFormationController::setMode(){
@@ -287,10 +292,12 @@ void ExpFormationController::setMode(){
 
 //latitude weidu longitude jingdu
 void ExpFormationController::loadParameter(){
-    pnh_.param<std::vector<double>>("gp_origin", gp_origin_, 
-                    std::vector<double>({31.81746431549553,
-                                                                117.13249134391783,
-                                                                33.0}));
+    std::vector<double> pos_uav1;
+
+    pnh_.param<std::vector<double>>("pos_uav1", pos_uav1, 
+                    std::vector<double>({-3.0, 4.0}));
+
+    pos_uav1_ = Eigen::Vector2d(pos_uav1[0], pos_uav1[1]);
 
     std::vector<double> uav2_init_pos;
     std::vector<double> uav3_init_pos;
@@ -306,9 +313,12 @@ void ExpFormationController::loadParameter(){
     pnh_.param<std::vector<double>>("uav4_init_pos", uav4_init_pos, 
                     std::vector<double>({-3.0, 0.0, 2.0}));                                                                    
     
-    uav2_init_pos_ = vector2EigenVector3d(uav2_init_pos);
-    uav3_init_pos_ = vector2EigenVector3d(uav3_init_pos);
-    uav4_init_pos_ = vector2EigenVector3d(uav4_init_pos);
+    uav2_init_pos_ = Eigen::Vector3d(uav2_init_pos[0], uav2_init_pos[1], uav2_init_pos[2]) 
+                            + Eigen::Vector3d(pos_uav1_[0], pos_uav1_[1], 0.0);
+    uav3_init_pos_ = Eigen::Vector3d(uav3_init_pos[0], uav3_init_pos[1], uav3_init_pos[2]) 
+                            + Eigen::Vector3d(pos_uav1_[0], pos_uav1_[1], 0.0);
+    uav4_init_pos_ = Eigen::Vector3d(uav4_init_pos[0], uav4_init_pos[1], uav4_init_pos[2]) 
+                            + Eigen::Vector3d(pos_uav1_[0], pos_uav1_[1], 0.0);
 
     pnh_.param<std::vector<double>>("des_inter_distance_square", des_inter_distance_square, 
                     std::vector<double>({4.0, 4.0, 12.0}));       
@@ -320,17 +330,9 @@ void ExpFormationController::loadParameter(){
     pnh_.param<double>("gain_m", gain_m_, 0.01);
     pnh_.param<double>("gain_n", gain_n_, 0.04);
     pnh_.param<double>("threshold", threshold_, 5.0);
-
-    pos_uav1_ = Eigen::Vector2d(-3.0, 4.0);
-    //初始化gp_origin
 }
 
 double ExpFormationController::pow2(double x){
     return x * x;
 }
 
-Eigen::Vector3d ExpFormationController::vector2EigenVector3d(const std::vector<double> & v){
-    Eigen::Vector3d ev;
-    ev[0] = v[0];ev[1] = v[1];ev[2] = v[2];
-    return ev;
-}
