@@ -1,0 +1,7 @@
+roslaunch multiuav_formation exp_formation.launch
+
+timeout 1s rostopic pub /ready_to_formation std_msgs/Bool 'True'
+
+timeout 1s rostopic pub /uav4_ready_to_fly std_msgs/Bool 'True'
+
+timeout 1s rostopic pub /ready_to_yaw std_msgs/Bool 'True'
