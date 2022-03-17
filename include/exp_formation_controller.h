@@ -25,7 +25,7 @@ public:
 
 private:
     ros::NodeHandle nh_, pnh_;
-    ExpUAV exp_uav2_, exp_uav3_, exp_uav4_;
+    ExpUAV exp_uav2_, exp_uav3_;
 
     Eigen::Vector3d uav2_init_pos_;
     Eigen::Vector3d uav3_init_pos_;

@@ -6,7 +6,6 @@ ExpFormationController::ExpFormationController(
     pnh_(pnh),
     exp_uav2_(ros::NodeHandle("uav2"), pnh_),
     exp_uav3_(ros::NodeHandle("uav3"), pnh_),
-    exp_uav4_(ros::NodeHandle("uav4"), pnh_),
     ready_to_init_position_(true),
     ready_to_formation_(false),
     uav4_ready_to_fly_(false),
@@ -37,7 +36,6 @@ ExpFormationController::~ExpFormationController(){}
 void ExpFormationController::mainloop(const ros::TimerEvent & time){
     pos_uav2_ = exp_uav2_.pos_;
     pos_uav3_ = exp_uav3_.pos_;
-    pos_uav4_ = exp_uav4_.pos_;
 
     if(ready_to_init_position_){
         ROS_INFO_ONCE("Enter the process of sending the init position.");
@@ -47,7 +45,6 @@ void ExpFormationController::mainloop(const ros::TimerEvent & time){
 
         exp_uav2_.pubLocalPosition(uav2_init_pos_);
         exp_uav3_.pubLocalPosition(uav3_init_pos_);
-        exp_uav4_.pubLocalPosition(uav4_init_pos_);
     }
 
     if(ready_to_formation_){
@@ -62,24 +59,6 @@ void ExpFormationController::mainloop(const ros::TimerEvent & time){
         ROS_DEBUG("u3/x: %f, y: %f", u3.x(), u3.y());
         ROS_DEBUG("uav4_init_pos_/x: %f, y: %f, z: %f", uav4_init_pos_.x(), uav4_init_pos_.y(), uav4_init_pos_.z());
         //hold the uav4 hovering
-        exp_uav4_.pubLocalPosition(uav4_init_pos_);
-    }
-
-    if(uav4_ready_to_fly_){
-        ROS_INFO_ONCE("Enter the uav4");
-        Eigen::Vector2d u4;
-        u4[0] = 0.4 * (uav4_des_pos_.x() - pos_uav4_.x());
-        u4[1] = 0.4 * (uav4_des_pos_.y() - pos_uav4_.y());
-        ROS_DEBUG("uav4_des_pos_/x: %f, y: %f", uav4_des_pos_.x(), uav4_des_pos_.y());
-        exp_uav4_.pubLocalCmdVel(u4, uav4_init_pos_[2]);
-        //hold the uav2/uav3 hovering
-        ROS_DEBUG("u4/x: %f, y: %f", u4.x(), u4.y());
-        ROS_DEBUG("uav2_des_pos_/x: %f, y: %f, z: %f", uav2_des_pos_.x(), uav2_des_pos_.y(), uav2_des_pos_.z());
-        ROS_DEBUG("relative uav2_des_pos_/x: %f, y: %f, z: %f", uav2_des_pos_.x() - pos_uav1_.x(), uav2_des_pos_.y() - pos_uav1_.y(), uav2_des_pos_.z());
-        ROS_DEBUG("uav3_des_pos_/x: %f, y: %f, z: %f", uav3_des_pos_.x(), uav3_des_pos_.y(), uav3_des_pos_.z());
-        ROS_DEBUG("relative uav3_des_pos_/x: %f, y: %f, z: %f", uav3_des_pos_.x() - pos_uav1_.x(), uav3_des_pos_.y() - pos_uav1_.y(), uav3_des_pos_.z());
-        exp_uav2_.pubLocalPosition(uav2_des_pos_);
-        exp_uav3_.pubLocalPosition(uav3_des_pos_);
     }
 
     if(ready_to_yaw_){
@@ -88,7 +67,6 @@ void ExpFormationController::mainloop(const ros::TimerEvent & time){
         ROS_DEBUG("uav2_des_yaw:%f,uav3_des_yaw:%f,uav4_des_yaw:%f", des_yaw_.x(), des_yaw_.y(), des_yaw_.z());
         exp_uav2_.pubYawCmdVel(des_yaw_.x());
         exp_uav3_.pubYawCmdVel(des_yaw_.y());
-        exp_uav4_.pubYawCmdVel(des_yaw_.z());
     }
 }
 
@@ -233,13 +211,10 @@ void ExpFormationController::initializeState(){
     exp_uav3_.arming_client_.waitForExistence();
     exp_uav3_.set_mode_client_.waitForExistence();
 
-    exp_uav4_.arming_client_.waitForExistence();
-    exp_uav4_.set_mode_client_.waitForExistence();
     ROS_INFO("The service for arming and set_mode is ready");
     //wait for FCU connection
-    while (ros::ok() && exp_uav2_.state_.connected
-        && exp_uav3_.state_.connected
-        && exp_uav4_.state_.connected){
+    while (!exp_uav2_.state_.connected
+        || !exp_uav3_.state_.connected){
             ros::Rate rate(20.0);
             rate.sleep();
             ROS_INFO("The onboard computer does not connect the fcu!");
@@ -261,7 +236,6 @@ void ExpFormationController::initCenterOfCoordinate(){
 
     exp_uav2_.pubSetGPOrigin(msg);
     exp_uav3_.pubSetGPOrigin(msg);
-    exp_uav4_.pubSetGPOrigin(msg);
 
     ROS_INFO("global_position_origin/latitude: %f, longitude: %f, altitude: %f", 
                                         msg.position.latitude, msg.position.longitude, msg.position.altitude);
@@ -288,16 +262,6 @@ void ExpFormationController::setMode(){
         }
         else{
               ROS_INFO("fail to enable uav3 offboard");
-        }
-    }
-
-    if(exp_uav4_.state_.armed && exp_uav4_.state_.mode != "OFFBOARD"){
-        if(exp_uav4_.set_mode_client_.call(set_mode_srv) &&
-                set_mode_srv.response.mode_sent){
-                        ROS_INFO("uav4 offboard enabled");
-        }
-        else{
-              ROS_INFO("fail to enable uav4 offboard");
         }
     }
 }
