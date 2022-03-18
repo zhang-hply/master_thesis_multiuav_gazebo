@@ -3,11 +3,11 @@ gp_origin: [31.81746431549553, 117.13249134391783, 33.0]
 pos_uav1: [-3.0, 4.0]
 
 #The center of coordinate is uav1 
-uav2_init_pos: [3.0, -4.0, 2.0]
-uav3_init_pos: [4.0, 3.0, 2.0]
-uav4_init_pos: [-4.0, 0.0, 2.0]
+uav2_init_pos: [6.0, -8.0, 4.0]
+uav3_init_pos: [8.0, 6.0, 4.0]
+uav4_init_pos: [-8.0, 0.0, 4.0]
 
-des_inter_distance_square: [9.0, 9.0, 27.0]
+des_inter_distance_square: [25.0, 25.0, 100.0]
 
 gain_m: 0.02
 gain_n: 0.08
