@@ -12,9 +12,10 @@ ExpFormationController::ExpFormationController(
     uav4_ready_to_fly_(false),
     ready_to_yaw_(false){
         ros::console::set_logger_level(ROSCONSOLE_DEFAULT_NAME, ros::console::levels::Debug);
-        loadParameter();
+        
         initializeState();
         initCenterOfCoordinate();
+        loadParameter();
         setMode();
 
         ready_to_formation_sub_ = nh_.subscribe("/ready_to_formation", 1,
@@ -29,7 +30,7 @@ ExpFormationController::ExpFormationController(
         inter_distance_error_pub_ = nh_.advertise<nav_msgs::Odometry>(
             "/inter_distance", 1);
 
-        main_loop_timer_ = nh_.createTimer(ros::Duration(0.02), 
+        main_loop_timer_ = nh_.createTimer(ros::Duration(0.05), 
         &ExpFormationController::mainloop, this);
 }
 ExpFormationController::~ExpFormationController(){}
@@ -170,7 +171,7 @@ Eigen::Vector2d ExpFormationController::computeUav3VelCmd(){
         ROS_ERROR("The deter of A3 is nearly zero!!!");
     }
 
-    ROS_DEBUG_STREAM("A2: " << A3 << "\n C: " << C << "\n D: " << D << "\n b2" << b3);
+    ROS_DEBUG_STREAM("A3: " << A3 << "\n C: " << C << "\n D: " << D << "\n b2" << b3);
     u3 = - 1.0 / A3.determinant() * C * D * b3;
     return u3;
 }
@@ -243,6 +244,7 @@ void ExpFormationController::initializeState(){
             ros::Rate rate(20.0);
             rate.sleep();
             ROS_INFO("The onboard computer does not connect the fcu!");
+            ros::spinOnce();
     }
 }
 
@@ -250,6 +252,7 @@ void ExpFormationController::initCenterOfCoordinate(){
     while (exp_uav2_.global_position_.status.status == sensor_msgs::NavSatStatus::STATUS_NO_FIX
                || abs(exp_uav2_.global_position_.latitude) < 1.0){
         ROS_WARN("The gps of uav2 is no fix");
+        ros::spinOnce();
     }
     ROS_INFO("The gps of uav2 is fix");
     
@@ -325,6 +328,17 @@ void ExpFormationController::loadParameter(){
     pnh_.param<std::vector<double>>("uav4_init_pos", uav4_init_pos, 
                     std::vector<double>({-3.0, 0.0, 2.0}));                                                                    
     
+    while (abs(exp_uav2_.home_height_) < 0.01 
+                || abs(exp_uav3_.home_height_) < 0.01
+                || abs(exp_uav4_.home_height_) < 0.01 ){
+        ROS_WARN("The home height fail to set");
+        ros::spinOnce();
+    }
+    
+    uav2_init_pos[2] = uav2_init_pos[2] + exp_uav2_.home_height_;
+    uav3_init_pos[2] = uav3_init_pos[2] + exp_uav3_.home_height_;
+    uav4_init_pos[2] = uav4_init_pos[2] + exp_uav4_.home_height_;
+
     uav2_init_pos_ = Eigen::Vector3d(uav2_init_pos[0], uav2_init_pos[1], uav2_init_pos[2]) 
                             + Eigen::Vector3d(pos_uav1_[0], pos_uav1_[1], 0.0);
     uav3_init_pos_ = Eigen::Vector3d(uav3_init_pos[0], uav3_init_pos[1], uav3_init_pos[2]) 

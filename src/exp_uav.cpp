@@ -12,6 +12,9 @@ ExpUAV::ExpUAV(const ros::NodeHandle & nh, const ros::NodeHandle & pnh)\
         global_position_sub_ = nh_.subscribe("mavros/global_position/global", 10,
                             &ExpUAV::globalPositionCallback, this);
         
+        home_position_sub_ = nh_.subscribe("mavros/home_position/home", 10,
+                            &ExpUAV::homePositionCallback, this);
+
         local_cmd_vel_pub_ = nh_.advertise<geometry_msgs::TwistStamped>(
                             "mavros/setpoint_velocity/cmd_vel", 10);
 
@@ -99,6 +102,9 @@ void ExpUAV::pubYawCmdVel(const double des_yaw){
     local_cmd_vel_pub_.publish(msg);
 }
 
+void ExpUAV::homePositionCallback(const mavros_msgs::HomePositionConstPtr & msg){
+    home_height_ = (*msg).position.z;
+}
 
 
 
