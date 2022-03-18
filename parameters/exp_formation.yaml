@@ -1,6 +1,4 @@
-gp_origin: [31.81746431549553, 117.13249134391783, 33.0]
-
-pos_uav1: [-3.0, 4.0]
+pos_uav1: [-6.0, 8.0]
 
 #The center of coordinate is uav1 
 uav2_init_pos: [6.0, -8.0, 4.0]
