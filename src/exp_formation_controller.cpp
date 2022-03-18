@@ -349,7 +349,7 @@ void ExpFormationController::loadParameter(){
     pnh_.param<std::vector<double>>("des_inter_distance_square", des_inter_distance_square, 
                     std::vector<double>({4.0, 4.0, 12.0}));       
 
-    for (size_t i = 0; i < 2; i++){
+    for (size_t i = 0; i < 3; i++){
         des_inter_distance_[i] = sqrt(des_inter_distance_square[i]);
     }
     
