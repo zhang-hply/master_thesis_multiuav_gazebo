@@ -7,7 +7,7 @@ uav4_init_pos: [-8.0, 0.0, 4.0]
 
 des_inter_distance_square: [25.0, 25.0, 100.0]
 
-gain_m: 0.01
-gain_n: 0.04
+gain_m: 0.06
+gain_n: 0.08
 
 threshold: 12.0

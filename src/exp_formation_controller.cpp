@@ -69,8 +69,8 @@ void ExpFormationController::mainloop(const ros::TimerEvent & time){
     if(uav4_ready_to_fly_){
         ROS_INFO_ONCE("Enter the uav4");
         Eigen::Vector2d u4;
-        u4[0] = 0.4 * (uav4_des_pos_.x() - pos_uav4_.x());
-        u4[1] = 0.4 * (uav4_des_pos_.y() - pos_uav4_.y());
+        u4[0] = 0.04 * (uav4_des_pos_.x() - pos_uav4_.x());
+        u4[1] = 0.04 * (uav4_des_pos_.y() - pos_uav4_.y());
         ROS_DEBUG("uav4_des_pos_/x: %f, y: %f", uav4_des_pos_.x(), uav4_des_pos_.y());
         exp_uav4_.pubLocalCmdVel(u4, uav4_init_pos_[2]);
         //hold the uav2/uav3 hovering
@@ -167,7 +167,7 @@ Eigen::Vector2d ExpFormationController::computeUav3VelCmd(){
 
     Eigen::Vector2d u3;
     if(abs(A3.determinant()) < 1e-3){
-        ready_to_formation_ = false;
+        ready_to_formation_ = false; 
         ROS_ERROR("The deter of A3 is nearly zero!!!");
     }
 
@@ -210,12 +210,12 @@ void ExpFormationController::readyToFormationCallback(const std_msgs::BoolConstP
 void ExpFormationController::uav4ReadyToFlyCallback(const std_msgs::BoolConstPtr & msg){
     uav4_ready_to_fly_ = msg->data;
     computeUav4DesPosition();
-    uav2_des_pos_.x() = pos_uav2_.x();
-    uav2_des_pos_.y() = pos_uav2_.y();
+    uav2_des_pos_.x() = exp_uav2_.pos_.x();
+    uav2_des_pos_.y() = exp_uav2_.pos_.y();
     uav2_des_pos_.z() = uav2_init_pos_.z();
 
-    uav3_des_pos_.x() = pos_uav3_.x();
-    uav3_des_pos_.y() = pos_uav3_.y();
+    uav3_des_pos_.x() = exp_uav3_.pos_.x();
+    uav3_des_pos_.y() = exp_uav3_.pos_.y();
     uav3_des_pos_.z() = uav3_init_pos_.z();
     ready_to_formation_ = false;
 }

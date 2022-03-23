@@ -1,0 +1,7 @@
+roslaunch mavros px4.launch fcu_url:="udp://:14550@192.168.4.1:14557"
+
+timeout 1s rostopic pub /ready_to_formation std_msgs/Bool 'True'
+
+timeout 1s rostopic pub /uav4_ready_to_fly std_msgs/Bool 'True'
+
+timeout 1s rostopic pub /ready_to_yaw std_msgs/Bool 'True'
