@@ -88,16 +88,19 @@ void ExpFormationController::mainloop(const ros::TimerEvent & time){
         //需要测试此时是否需要发送位置指令进而保证无人机的悬停
         ROS_DEBUG("uav2_des_yaw:%f,uav3_des_yaw:%f,uav4_des_yaw:%f", des_yaw_.x(), des_yaw_.y(), des_yaw_.z());
         double use_cmd = true;
-
+        Eigen::Vector3d uav4_des_pos;
+        uav4_des_pos.x() = uav4_des_pos_.x();
+        uav4_des_pos.y() = uav4_des_pos_.y();
+        uav4_des_pos.z() = uav4_init_pos_.z();
         if(use_cmd){
             exp_uav2_.pubYawCmdVel(des_yaw_.x());
             exp_uav3_.pubYawCmdVel(des_yaw_.y());
             exp_uav4_.pubYawCmdVel(des_yaw_.z());
         }
         else{
-            exp_uav2_.pubYawCmdPos(des_yaw_.x());
-            exp_uav3_.pubYawCmdPos(des_yaw_.y());
-            exp_uav4_.pubYawCmdPos(des_yaw_.z());
+            exp_uav2_.pubYawCmdPos(uav2_des_pos_, des_yaw_.x());
+            exp_uav3_.pubYawCmdPos(uav3_des_pos_, des_yaw_.y());
+            exp_uav4_.pubYawCmdPos(uav4_des_pos, des_yaw_.z());
         }
         
         

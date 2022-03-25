@@ -52,7 +52,7 @@ public:
     void pubSetGPOrigin(const geographic_msgs::GeoPointStamped & msg);
     void pubYawCmdVel(const double des_yaw);
     void pubLocalPosition(Eigen::Vector3d & position);
-    void pubYawCmdPos(const double des_yaw);
+    void pubYawCmdPos(const Eigen::Vector3d & position, const double des_yaw);
 private:
     ros::NodeHandle nh_, pnh_;
     // subscriber the info of connected, armed, guided, manual_input, mode, system_status

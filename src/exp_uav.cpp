@@ -110,13 +110,18 @@ void ExpUAV::homePositionCallback(const mavros_msgs::HomePositionConstPtr & msg)
 }
 
 //直接使用mavros/setpoint_position/local发送yaw指令
-void ExpUAV::pubYawCmdPos(const double des_yaw){
+void ExpUAV::pubYawCmdPos(const Eigen::Vector3d & position, const double des_yaw){
     geometry_msgs::PoseStamped msg;
     msg.header.stamp = ros::Time::now();
+    msg.pose.position.x = position.x();
+    msg.pose.position.y = position.y();
+    msg.pose.position.z = position.z();
     msg.pose.orientation = quadrotor_common::eigenToGeometry(
                             quadrotor_common::eulerAnglesZYXToQuaternion(
                             Eigen::Vector3d(0.0, 0.0, des_yaw)));
+    ROS_DEBUG_STREAM(nh_.getNamespace() << "yawCmdPos: " << msg.pose.position << msg.pose.orientation);
     local_position_pub_.publish(msg);
+    des_yaw_ = des_yaw;
 }
 
 
