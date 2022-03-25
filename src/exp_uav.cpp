@@ -83,7 +83,8 @@ void ExpUAV::poseCallback(const geometry_msgs::PoseStampedConstPtr & msg){
     
     geometry_msgs::Vector3Stamped yaw_msg;
     yaw_msg.header.stamp = ros::Time::now();
-    yaw_msg.vector.x = yaw_;
+    yaw_msg.vector.x = yaw_ / M_PI * 180.0;
+    yaw_msg.vector.y = des_yaw_ /M_PI * 180.0;
     yaw_pub_.publish(yaw_msg);
 }
 
@@ -100,13 +101,23 @@ void ExpUAV::pubYawCmdVel(const double des_yaw){
     yaw_rate = yaw_rate < 0.5 ? (yaw_rate  > -0.5 ? yaw_rate : -0.5) : 0.5;
     msg.twist.angular.z = yaw_rate;
     local_cmd_vel_pub_.publish(msg);
+    des_yaw_ = des_yaw;
+    
 }
 
 void ExpUAV::homePositionCallback(const mavros_msgs::HomePositionConstPtr & msg){
     home_height_ = (*msg).position.z;
 }
 
-
+//直接使用mavros/setpoint_position/local发送yaw指令
+void ExpUAV::pubYawCmdPos(const double des_yaw){
+    geometry_msgs::PoseStamped msg;
+    msg.header.stamp = ros::Time::now();
+    msg.pose.orientation = quadrotor_common::eigenToGeometry(
+                            quadrotor_common::eulerAnglesZYXToQuaternion(
+                            Eigen::Vector3d(0.0, 0.0, des_yaw)));
+    local_position_pub_.publish(msg);
+}
 
 
 

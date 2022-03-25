@@ -24,5 +24,9 @@
         /uav3/yaw
         /uav4/yaw
 
+        /uav2/mavros/state
+        /uav3/mavros/state
+        /uav4/mavros/state
+
         -o $(env HOME)/data/tmp/rosbag_for_multiuav_formation/exp_formation"/> 
 </launch>
