@@ -191,23 +191,22 @@ Eigen::Vector2d ExpFormationController::computeUav3VelCmd(){
 }
 
 void ExpFormationController::computeUav4DesPosition(){
-    pos_uav2_ = pos_uav2_ - pos_uav1_;
-    pos_uav3_ = pos_uav3_ - pos_uav1_;
+    Eigen::Vector2d center_of_line = (pos_uav2_ + pos_uav3_) / 2.0;
+    Eigen::Vector2d perp_of_line;
+    perp_of_line << -(pos_uav3_.y() - pos_uav2_.y()),
+                    pos_uav3_.x() - pos_uav2_.x();
 
-    if(abs(pos_uav3_.y() - pos_uav2_.y()) < 1e-3){
-        uav4_des_pos_ << -pos_uav3_.norm(), 0.0;
-        return;
+    if(perp_of_line.norm() != 0){
+        perp_of_line = perp_of_line / perp_of_line.norm();
     }
+    else{
+        ROS_ERROR("The perpendicular vector of line from pos_uav2 to pos_uav3 is zero!!!");
+    }
+    
+    
 
-    double x = (pow2(pos_uav3_.x()) + pow2(pos_uav3_.y())) /
-                                            (1 + pow2(pos_uav3_.x() - pos_uav2_.x()) / 
-                                            pow2(pos_uav3_.y() - pos_uav2_.y()));
+    uav4_des_pos_ = center_of_line + perp_of_line * (pos_uav3_ - pos_uav2_).norm() * sqrt(3) / 2.0;
 
-    uav4_des_pos_.x()  = -sqrt(x);
-    uav4_des_pos_.y() = -(pos_uav3_.x() - pos_uav2_.x())/
-                                            (pos_uav3_.y() - pos_uav2_.y()) * uav4_des_pos_.x();
-
-    uav4_des_pos_ = uav4_des_pos_ + pos_uav1_;
 }
 
 void ExpFormationController::computeDesYaw(){
